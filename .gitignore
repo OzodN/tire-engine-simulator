@@ -1,0 +1,15 @@
+# Project place file
+/tire-engine_simulator.rbxlx
+
+# Roblox Studio lock files
+/*.rbxlx.lock
+/*.rbxl.lock
+
+#vs code
+.vscode/
+
+
+/Packages/*
+/ServerPackages/*
+sourcemap.json
+wally.lock
