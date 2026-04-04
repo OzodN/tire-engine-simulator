@@ -5,7 +5,7 @@ local Workspace = game:GetService("Workspace")
 
 function JunkService:Init()
 	self.SpawnFolder = Workspace:WaitForChild("JunkSpawnPoints")
-	self.TireTemplate = Workspace:WaitForChild("Tire")
+	self.TireTemplate = Workspace:WaitForChild("Tires"):WaitForChild("Tire")
 end
 
 function JunkService:SpawnTire()

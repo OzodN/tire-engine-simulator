@@ -8,16 +8,16 @@ function InteractionService:Init(services)
 end
 
 function InteractionService:BindTires()
-	local workspace = game:GetService("Workspace")
+	local Workspace = game:GetService("Workspace")
 
-	for _, tire in ipairs(workspace:GetDescendants()) do
+	for _, tire in ipairs(Workspace:GetDescendants()) do
 		if tire.Name == "Tire" then
 			self:SetupTire(tire)
 		end
 	end
 
 	-- если будут новые появляться
-	workspace.DescendantAdded:Connect(function(obj)
+	Workspace.DescendantAdded:Connect(function(obj)
 		if obj.Name == "Tire" then
 			self:SetupTire(obj)
 		end
