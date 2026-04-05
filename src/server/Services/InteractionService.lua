@@ -1,3 +1,5 @@
+local Workspace = game:GetService("Workspace")
+
 local InteractionService = {}
 InteractionService.__index = InteractionService
 
@@ -8,8 +10,6 @@ function InteractionService:Init(services)
 end
 
 function InteractionService:BindTires()
-	local Workspace = game:GetService("Workspace")
-
 	for _, tire in ipairs(Workspace:GetDescendants()) do
 		if tire.Name == "Tire" then
 			self:SetupTire(tire)
@@ -36,7 +36,7 @@ function InteractionService:SetupTire(tire)
 end
 
 function InteractionService:HandlePickup(player, tire)
-	if not tire or not tire:IsDescendantOf(workspace) then
+	if not tire or not tire:IsDescendantOf(Workspace) then
 		return
 	end
 

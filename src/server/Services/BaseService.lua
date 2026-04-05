@@ -1,10 +1,14 @@
 local BaseService = {}
 BaseService.__index = BaseService
 
+local SELL_RADIUS = 10
+
 function BaseService:Init(services)
 	self.PlayerService = services.PlayerService
 	self.DataService = services.DataService
 	self.TireService = services.TireService
+
+	self.cooldowns = {}
 
 	local Workspace = game:GetService("Workspace")
 	self.BaseZone = Workspace:WaitForChild("BaseZone")
@@ -37,20 +41,29 @@ function BaseService:CheckPlayer(player)
 
 	local distance = (root.Position - self.BaseZone.Position).Magnitude
 
-	if distance < 10 then
+	if distance < SELL_RADIUS then
 		self:SellTires(player)
 	end
 end
 
 function BaseService:SellTires(player)
+	if self.cooldowns[player] then
+		return
+	end
+
+	self.cooldowns[player] = true
+
+	task.delay(1, function()
+		self.cooldowns[player] = nil
+	end)
+
 	local amount = self.PlayerService:DropTires(player)
 	if amount <= 0 then
 		return
 	end
 
 	local data = self.DataService:Get(player)
-
-	local result = self.TireService:ProcessTires(player, amount)
+local result = self.TireService:Proces	sTires(player, amount)
 
 	print(player.Name .. " processed tires:", result.coins)
 	print("Coins:", data.Coins)
