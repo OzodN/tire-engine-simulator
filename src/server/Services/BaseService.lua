@@ -63,7 +63,8 @@ function BaseService:SellTires(player)
 	end
 
 	local data = self.DataService:Get(player)
-local result = self.TireService:Proces	sTires(player, amount)
+
+	local result = self.TireService:ProcessTires(player, amount)
 
 	print(player.Name .. " processed tires:", result.coins)
 	print("Coins:", data.Coins)
