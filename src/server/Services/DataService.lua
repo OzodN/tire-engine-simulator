@@ -16,10 +16,24 @@ function DataService:Init()
 end
 
 function DataService:LoadPlayer(player)
+	local folder = Instance.new("Folder")
+	folder.Name = "Data"
+	folder.Parent = player
+
+	local coins = Instance.new("IntValue")
+	coins.Name = "Coins"
+	coins.Value = 0
+	coins.Parent = folder
+
+	local tires = Instance.new("IntValue")
+	tires.Name = "Tires"
+	tires.Value = 0
+	tires.Parent = folder
+
 	playerData[player] = {
 		Coins = 0,
 		EngineLevel = 1,
-		CarryCapacity = 1,
+		CarryCapacity = 3,
 		Rebirths = 0,
 		Inventory = { Tires = 0 },
 	}

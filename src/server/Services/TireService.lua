@@ -19,6 +19,14 @@ function TireService:ProcessTires(player, amount)
 
 	data.Coins += reward
 
+	local dataFolder = player:FindFirstChild("Data")
+	if dataFolder then
+		local _coins = dataFolder:FindFirstChild("Coins")
+		if _coins then
+			_coins.Value = data.Coins
+		end
+	end
+
 	return {
 		coins = reward,
 	}
