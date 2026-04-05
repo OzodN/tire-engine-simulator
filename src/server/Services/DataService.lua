@@ -33,7 +33,7 @@ function DataService:LoadPlayer(player)
 	playerData[player] = {
 		Coins = 0,
 		EngineLevel = 1,
-		CarryCapacity = 3,
+		CarryCapacity = 1,
 		Rebirths = 0,
 		Inventory = { Tires = 0 },
 	}
