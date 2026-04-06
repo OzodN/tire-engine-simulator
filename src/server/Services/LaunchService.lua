@@ -12,8 +12,11 @@ local GOOD_START = 0.35
 local GOOD_END = 0.65
 
 function LaunchService:Init(services)
+	local remotes = ReplicatedStorage.Remotes
+
 	self.DataService = services.DataService
-	self.LaunchRemote = game.ReplicatedStorage.Remotes.LaunchRequest
+	self.LaunchRemote = remotes.LaunchRequest
+	self.ResultRemote = remotes.LaunchResult
 
 	self.LaunchRemote.OnServerEvent:Connect(function(player, result, position)
 		self:HandleLaunch(player, result, position)
@@ -28,16 +31,13 @@ function LaunchService:HandleLaunch(player, result, position)
 
 	local config = LaunchConfig.Results[finalResult]
 
-	-- 🔥 сила запуска
-	local power = config.power
-
-	-- 🔥 дистанция (упрощённо)
-	local distance = power * 2
-
-	-- 🔥 награда
-	local reward = math.floor(distance * config.multiplier)
+	local power = config.power -- 🔥 сила запуска
+	local distance = power * 2 -- 🔥 дистанция (упрощённо)
+	local reward = math.floor(distance * config.multiplier) -- 🔥 награда
 
 	data.Coins += reward
+
+	self.ResultRemote:FireClient(player, finalResult, power, distance)
 
 	--временно для синхронизации монет после запуска, потом вынести в утилиту и юзать везде
 	local dataFolder = player:FindFirstChild("Data")

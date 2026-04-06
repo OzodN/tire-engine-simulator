@@ -19,6 +19,7 @@ function TireService:ProcessTires(player, amount)
 
 	data.Coins += reward
 
+	--временно для синхронизации монет после запуска, потом вынести в утилиту и юзать везде
 	local dataFolder = player:FindFirstChild("Data")
 	if dataFolder then
 		local _coins = dataFolder:FindFirstChild("Coins")
