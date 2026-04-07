@@ -1,34 +1,57 @@
+--// SERVICES
 local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
-local resultRemote = ReplicatedStorage.Remotes.LaunchResult
+--// REMOTES
+local remotes = ReplicatedStorage:WaitForChild("Remotes")
+local launchRemote = remotes:WaitForChild("LaunchRequest")
+local resultRemote = remotes:WaitForChild("LaunchResult")
 
+--// MODULES
+local CameraController = require(script.Parent:WaitForChild("CameraController"))
+local FXController = require(script.Parent.Parent:WaitForChild("FX"):WaitForChild("FXController"))
+
+--// OBJECTS
 local dummy = Workspace:WaitForChild("LaunchDummy")
 
-local launchRemote = ReplicatedStorage.Remotes.LaunchRequest
-
+--// STATE
 local isTiming = false
 local position = 0
-local speed = 2
 
--- зоны
+--// CONFIG
+local SPEED = 2
+
 local PERFECT_START = 0.45
 local PERFECT_END = 0.55
 
 local GOOD_START = 0.35
 local GOOD_END = 0.65
 
--- запуск системы
-function StartTiming()
+-- ======================
+-- TIMING
+-- ======================
+
+local function getTimingResult(pos)
+	if pos >= PERFECT_START and pos <= PERFECT_END then
+		return "Perfect"
+	elseif pos >= GOOD_START and pos <= GOOD_END then
+		return "Good"
+	end
+
+	return "Miss"
+end
+
+local function startTiming()
 	isTiming = true
 	position = 0
 
 	task.spawn(function()
 		while isTiming do
 			task.wait(0.016)
-			position += 0.016 * speed
+
+			position += 0.016 * SPEED
 
 			if position > 1 then
 				position = 0
@@ -39,7 +62,10 @@ function StartTiming()
 	end)
 end
 
--- нажатие
+-- ======================
+-- INPUT
+-- ======================
+
 UserInputService.InputBegan:Connect(function(input, processed)
 	if processed then
 		return
@@ -47,39 +73,35 @@ UserInputService.InputBegan:Connect(function(input, processed)
 
 	if input.KeyCode == Enum.KeyCode.F then
 		if not isTiming then
-			StartTiming()
+			startTiming()
 		else
 			isTiming = false
 
-			-- определяем результат
-			local result = "Miss"
-
-			if position >= PERFECT_START and position <= PERFECT_END then
-				result = "Perfect"
-			elseif position >= GOOD_START and position <= GOOD_END then
-				result = "Good"
-			end
-
-			print("Result:", result)
-
+			local result = getTimingResult(position)
 			launchRemote:FireServer(result, position)
 		end
 	end
 end)
 
--- обработка результата
-resultRemote.OnClientEvent:Connect(function(result, power, distance)
-	local camera = Workspace.CurrentCamera
+-- ======================
+-- LAUNCH
+-- ======================
 
+local function playLaunch(result, power, distance)
 	local startPos = dummy.Position
 	local direction = Vector3.new(0, 0, -1)
 
-	local duration = 1 -- время полёта
+	local duration = 1
 	local elapsed = 0
-
 	local height = power * 0.3
 
-	camera.CameraType = Enum.CameraType.Scriptable
+	-- anticipation
+	dummy.Position -= Vector3.new(0, 0, 2)
+	task.wait(0.05)
+	dummy.Position += Vector3.new(0, 0, 2)
+
+	FXController:PlayLaunch()
+	CameraController:SetScriptable()
 
 	local connection
 	connection = RunService.RenderStepped:Connect(function(dt)
@@ -87,19 +109,40 @@ resultRemote.OnClientEvent:Connect(function(result, power, distance)
 
 		local t = math.clamp(elapsed / duration, 0, 1)
 
-		-- 🔥 ПАРАБОЛА (самое важное)
 		local horizontal = startPos + direction * (distance * t)
 		local vertical = height * 4 * t * (1 - t)
 
 		local newPos = horizontal + Vector3.new(0, vertical, 0)
 		dummy.Position = newPos
 
-		-- 🎥 камера
-		camera.CFrame = camera.CFrame:Lerp(CFrame.new(newPos + Vector3.new(0, 10, 15), newPos), 0.1)
+		CameraController:Follow(newPos)
 
 		if t >= 1 then
 			connection:Disconnect()
-			camera.CameraType = Enum.CameraType.Custom
+
+			FXController:PlayImpact(result)
+
+			task.spawn(function()
+				local camera = CameraController:Get()
+
+				if result == "Perfect" then
+					FXController:ShakeCamera(camera, 1.5, 0.3)
+				elseif result == "Good" then
+					FXController:ShakeCamera(camera, 0.7, 0.2)
+				else
+					FXController:ShakeCamera(camera, 0.3, 0.1)
+				end
+			end)
+
+			CameraController:SetDefault()
 		end
 	end)
+end
+
+-- ======================
+-- SERVER RESPONSE
+-- ======================
+
+resultRemote.OnClientEvent:Connect(function(result, power, distance)
+	playLaunch(result, power, distance)
 end)
