@@ -1,5 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LaunchConfig = require(ReplicatedStorage.Shared.Config.LaunchConfig)
+local LabelUpdateUtil = require(ReplicatedStorage.Shared.Utils.LabelUpdateUtil)
 
 local LaunchService = {}
 LaunchService.__index = LaunchService
@@ -15,6 +16,7 @@ function LaunchService:Init(services)
 	local remotes = ReplicatedStorage.Remotes
 
 	self.DataService = services.DataService
+	self.UpgradeService = services.UpgradeService
 	self.LaunchRemote = remotes.LaunchRequest
 	self.ResultRemote = remotes.LaunchResult
 
@@ -31,7 +33,7 @@ function LaunchService:HandleLaunch(player, result, position)
 
 	local config = LaunchConfig.Results[finalResult]
 
-	local power = config.power -- 🔥 сила запуска
+	local power = self.UpgradeService:GetValue(player, "Power") -- 🔥 сила запуска
 	local distance = power * 2 -- 🔥 дистанция (упрощённо)
 	local reward = math.floor(distance * config.multiplier) -- 🔥 награда
 
@@ -39,14 +41,8 @@ function LaunchService:HandleLaunch(player, result, position)
 
 	self.ResultRemote:FireClient(player, finalResult, power, distance)
 
-	--временно для синхронизации монет после запуска, потом вынести в утилиту и юзать везде
-	local dataFolder = player:FindFirstChild("Data")
-	if dataFolder then
-		local _coins = dataFolder:FindFirstChild("Coins")
-		if _coins then
-			_coins.Value = data.Coins
-		end
-	end
+	-- обновляем CoinsLabel
+	LabelUpdateUtil:SyncCoins(player)
 
 	print(player.Name .. " launch:", finalResult)
 	print("Power:", power)

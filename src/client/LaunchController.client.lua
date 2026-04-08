@@ -1,3 +1,5 @@
+print("LaunchController started")
+
 --// SERVICES
 local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -10,8 +12,8 @@ local launchRemote = remotes:WaitForChild("LaunchRequest")
 local resultRemote = remotes:WaitForChild("LaunchResult")
 
 --// MODULES
-local CameraController = require(script.Parent:WaitForChild("CameraController"))
-local FXController = require(script.Parent.Parent:WaitForChild("FX"):WaitForChild("FXController"))
+local CameraController = require(script.Parent.Controllers.CameraController)
+local FXController = require(script.Parent.FX.FXController)
 
 --// OBJECTS
 local dummy = Workspace:WaitForChild("LaunchDummy")

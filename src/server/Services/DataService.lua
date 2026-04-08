@@ -1,7 +1,7 @@
+local Players = game:GetService("Players")
+
 local DataService = {}
 DataService.__index = DataService
-
-local Players = game:GetService("Players")
 
 local playerData = {}
 
@@ -30,12 +30,30 @@ function DataService:LoadPlayer(player)
 	tires.Value = 0
 	tires.Parent = folder
 
+	local upgadesFolder = Instance.new("Folder")
+	upgadesFolder.Name = "Upgrades"
+	upgadesFolder.Parent = folder
+
+	local power = Instance.new("IntValue")
+	power.Name = "Power"
+	power.Value = 1
+	power.Parent = upgadesFolder
+
+	local carry = Instance.new("IntValue")
+	carry.Name = "Carry"
+	carry.Value = 1
+	carry.Parent = upgadesFolder
+
 	playerData[player] = {
 		Coins = 0,
-		EngineLevel = 1,
-		CarryCapacity = 1,
 		Rebirths = 0,
-		Inventory = { Tires = 0 },
+		Inventory = {
+			Tires = 0,
+		},
+		Upgrades = {
+			Power = 1,
+			Carry = 1,
+		},
 	}
 end
 
