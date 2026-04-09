@@ -30,21 +30,11 @@ local function updateResourceLabels()
 	tiresLabel.Text = "Tires: " .. playerData.tires
 end
 
--- Слушаем обновления от сервера
-dataChangedEvent.OnClientEvent:Connect(function(key, value)
-	if key == "Coins" then
-		playerData.coins = value
-		coinsLabel.Text = "Coins: " .. playerData.coins
-	elseif key == "Tires" then
-		playerData.tires = value
-		tiresLabel.Text = "Tires: " .. playerData.tires
-	end
-end)
-
 -- Update upgrade UI
 local function updateUpgradeUI()
 	local info = getInfoRemote:InvokeServer()
 	if not info then
+		warn("⚠️ GetUpgradeInfo returned nil!")
 		return
 	end
 
@@ -83,6 +73,19 @@ local function updateUpgradeUI()
 	end
 end
 
+-- Слушаем обновления от сервера
+dataChangedEvent.OnClientEvent:Connect(function(key, value)
+	if key == "Coins" then
+		playerData.coins = value
+		coinsLabel.Text = "Coins: " .. playerData.coins
+		-- Пересчитаем стоимость кнопок и их доступность
+		updateUpgradeUI()
+	elseif key == "Tires" then
+		playerData.tires = value
+		tiresLabel.Text = "Tires: " .. playerData.tires
+	end
+end)
+
 -- Initial setup
 local function setupUI()
 	updateResourceLabels()
@@ -92,13 +95,13 @@ end
 -- Upgrade button handlers
 upgradeFrame.PowerUp.MouseButton1Click:Connect(function()
 	upgradeRemote:FireServer("Power")
-	task.wait(0.1)
+	task.wait(0.5)  -- Даём серверу время обработать запрос
 	updateUpgradeUI()
 end)
 
 upgradeFrame.CarryUp.MouseButton1Click:Connect(function()
 	upgradeRemote:FireServer("Carry")
-	task.wait(0.1)
+	task.wait(0.5)  -- Даём серверу время обработать запрос
 	updateUpgradeUI()
 end)
 

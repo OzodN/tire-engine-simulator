@@ -169,7 +169,7 @@ function DataService:RemoveCoins(player, amount)
 	profile.Data.data.Economy.Coins -= amount
 	profile:Reconcile()
 
-	self:_NotifyChange(player, "CoinsSpent", amount)
+	self:_NotifyChange(player, "CoinsChanged", amount)
 	return true
 end
 

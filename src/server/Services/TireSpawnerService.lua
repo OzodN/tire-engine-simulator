@@ -31,10 +31,13 @@ function TireSpawnerService:Init(services)
 end
 
 function TireSpawnerService:FindSpawnPoints()
+	-- Create Junkyard if it doesn't exist
 	local junkyard = Workspace:FindFirstChild("Junkyard")
 	if not junkyard then
-		warn("⚠️ Junkyard folder not found!")
-		return
+		warn("⚠️ Junkyard folder not found! Creating it...")
+		junkyard = Instance.new("Folder")
+		junkyard.Name = "Junkyard"
+		junkyard.Parent = Workspace
 	end
 
 	-- Find all spawn points (parts named "TireSpawnPoint")
@@ -46,16 +49,25 @@ function TireSpawnerService:FindSpawnPoints()
 	end
 
 	if #self.SpawnPoints == 0 then
-		warn("⚠️ No TireSpawnPoints found in Junkyard! Creating manual spawn point...")
-		-- Fallback: use junkyard center
-		self.SpawnPoints = { junkyard }
+		warn("⚠️ No TireSpawnPoints found in Junkyard! Creating default spawn point...")
+		-- Fallback: create a default spawn point
+		local defaultSpawn = Instance.new("Part")
+		defaultSpawn.Name = "TireSpawnPoint"
+		defaultSpawn.Size = Vector3.new(1, 1, 1)
+		defaultSpawn.CanCollide = false
+		defaultSpawn.Transparency = 0.5
+		defaultSpawn.BrickColor = BrickColor.new("Bright red")
+		defaultSpawn.Position = Vector3.new(0, 5, 0)
+		defaultSpawn.Parent = junkyard
+		table.insert(self.SpawnPoints, defaultSpawn)
 	end
-
-	print("✅ Found " .. #self.SpawnPoints .. " spawn points")
 end
 
 function TireSpawnerService:StartSpawning()
 	task.spawn(function()
+		-- Wait a bit to ensure InteractionService is ready to listen
+		task.wait(1)
+
 		while true do
 			task.wait(self.SpawnRate)
 
@@ -81,7 +93,13 @@ function TireSpawnerService:SpawnTire()
 
 	-- Pick random spawn point
 	local spawnPoint = self.SpawnPoints[math.random(1, #self.SpawnPoints)]
-	local spawnPos = spawnPoint.Position + Vector3.new(math.random(-5, 5), 2, math.random(-5, 5))
+	-- Offset slightly from spawn point, keep visible
+	local offsetX = math.random(-3, 3)
+	local offsetZ = math.random(-3, 3)
+	local spawnPos = spawnPoint.Position + Vector3.new(offsetX, 1, offsetZ)
+
+	-- Safety: ensure Y is above ground
+	spawnPos = Vector3.new(spawnPos.X, math.max(spawnPos.Y, 3), spawnPos.Z)
 
 	-- Create tire part
 	local tire = Instance.new("Part")
@@ -95,21 +113,24 @@ function TireSpawnerService:SpawnTire()
 	tire.Rotation = Vector3.new(90, 0, 0)
 	tire.Color = modifierData.Color
 	tire.Material = Enum.Material.Rubber
-	tire.Parent = Workspace.Junkyard
+	tire.Transparency = 0 -- Ensure fully visible
 
-	-- Add metadata
+	-- Add metadata BEFORE parenting (to avoid race condition)
 	local tireLabel = Instance.new("StringValue")
 	tireLabel.Name = "TireData"
 	tireLabel.Value = tireData.TierID .. "|" .. tireData.Modifier
 	tireLabel.Parent = tire
 
-	-- Add proximity prompt for pickup
+	-- Add proximity prompt for pickup BEFORE parenting
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.Name = "PickupPrompt"
 	prompt.ActionText = "Pick up"
 	prompt.ObjectText = tierData.Name .. " " .. modifierData.Name
 	prompt.MaxActivationDistance = 20
 	prompt.Parent = tire
+
+	-- NOW set the parent to fire events
+	tire.Parent = Workspace.Junkyard
 
 	-- Track tire
 	self.ActiveTires = self.ActiveTires + 1
@@ -120,18 +141,6 @@ function TireSpawnerService:SpawnTire()
 		self.ActiveTires = self.ActiveTires - 1
 		connection:Disconnect()
 	end)
-
-	print(
-		"🔄 Spawned: "
-			.. tierData.Name
-			.. " "
-			.. modifierData.Name
-			.. " ("
-			.. self.ActiveTires
-			.. "/"
-			.. self.MaxTires
-			.. ")"
-	)
 
 	return tire
 end

@@ -71,13 +71,18 @@ function UpgradeService:Upgrade(player, upgradeType)
 	-- Deduct coins (auto-saves via DataService)
 	local success = self.DataService:RemoveCoins(player, cost)
 	if not success then
+		warn("❌ RemoveCoins failed for", player.Name)
 		return false
 	end
 
 	-- Apply upgrade
 	data.Upgrades[upgradeType] += 1
-
-	print(player.Name, "upgraded", upgradeType, "to", data.Upgrades[upgradeType])
+	
+	-- Save profile with new upgrade level
+	local profile = self.DataService:GetRaw(player)
+	if profile then
+		profile:Reconcile()
+	end
 
 	return true
 end
