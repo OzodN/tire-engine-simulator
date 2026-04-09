@@ -66,20 +66,24 @@ function LaunchService:HandleLaunchWithTire(player, tireData, baseReward)
 	end
 
 	-- Get player stats
-	local playerData = self.DataService:GetPlayerData(player)
-	local engineLevel = 1 -- TODO: Get from player data when engine selection added
+	local playerData = self.DataService:Get(player)
 	local powerLevel = self.UpgradeService:GetValue(player, "Power")
 	local accuracyResult = "Perfect" -- TODO: Get from skill check when timing system added
 
+	-- Create engine data (temporary: use Starter engine level 1)
+	-- TODO: Replace with actual player's selected engine when EngineSelector UI created
+	local engineData = {
+		EngineID = "Starter",  -- Must match EngineConfig key
+		Level = 1,
+	}
+
 	-- Calculate launch distance using LaunchCalculator
-	local launchDistance = LaunchCalculator:CalculateDistance({
-		engineLevel = engineLevel,
-		tireSpeedMultiplier = tierData.SpeedMultiplier,
-		tireModifier = tireData.Modifier,
-		powerLevel = powerLevel,
-		accuracyResult = accuracyResult,
-		boostMultiplier = 1.0,
-	})
+	local launchDistance = LaunchCalculator:CalculateDistance(
+		engineData,
+		tireData,
+		{ Power = powerLevel },
+		accuracyResult
+	)
 
 	-- Select best target based on distance
 	local lastTargetID = playerData.LastSelectedTargetID
@@ -87,7 +91,11 @@ function LaunchService:HandleLaunchWithTire(player, tireData, baseReward)
 
 	-- Remember this target for next launch
 	if selectedTarget then
-		self.DataService:UpdatePlayerData(player, { LastSelectedTargetID = selectedTarget.ID })
+		local profile = self.DataService:GetRaw(player)
+		if profile then
+			profile.Data.data.LastSelectedTargetID = selectedTarget.ID
+			profile:Reconcile()
+		end
 	end
 
 	-- Calculate reward
@@ -104,7 +112,16 @@ function LaunchService:HandleLaunchWithTire(player, tireData, baseReward)
 		TargetID = selectedTarget and selectedTarget.ID or nil,
 	})
 
-	print(player.Name, "launched:", tierData.Name, modifierData.Name, "| Distance:", launchDistance, "| Reward:", reward)
+	print(
+		player.Name,
+		"launched:",
+		tierData.Name,
+		modifierData.Name,
+		"| Distance:",
+		launchDistance,
+		"| Reward:",
+		reward
+	)
 end
 
 -- Original method: Timing-based launch (from skill check)

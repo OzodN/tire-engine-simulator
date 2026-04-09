@@ -5,8 +5,32 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Loader = require(game.ReplicatedStorage.Shared.Modules.Loader)
 
+-- Create critical Remotes EARLY (before anyone else connects)
+local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+if not remotes then
+	remotes = Instance.new("Folder")
+	remotes.Name = "Remotes"
+	remotes.Parent = ReplicatedStorage
+end
+
 -- Initialize targets FIRST before services load
-require(script.Parent:FindFirstChild("InitTargets"))
+local TargetConfig = require(ReplicatedStorage.Shared.Config.TargetConfig)
+local launchArea = Workspace:FindFirstChild("LaunchArea")
+local launchPad = launchArea and launchArea:FindFirstChild("LaunchPad")
+local targetsFolder = Workspace:FindFirstChild("Targets")
+
+if launchPad and targetsFolder then
+	local targetObjects = {}
+	for _, obj in ipairs(targetsFolder:GetChildren()) do
+		if obj:IsA("BasePart") then
+			table.insert(targetObjects, obj)
+		end
+	end
+	if #targetObjects > 0 then
+		TargetConfig:Initialize(launchPad.Position, targetObjects)
+		print("🎯 Target system ready! Targets:", #TargetConfig.Targets)
+	end
+end
 
 local services = Loader.LoadFolder(ServicesFolder)
 
