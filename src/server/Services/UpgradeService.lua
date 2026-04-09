@@ -88,8 +88,11 @@ function UpgradeService:GetValue(player, upgradeType)
 		return 0
 	end
 
-	local level = data.Upgrades[upgradeType]
+	local level = data.Upgrades[upgradeType] or 1 -- Default to level 1 if missing
 	local config = UpgradeConfig[upgradeType]
+	if not config then
+		return 0
+	end
 
 	return config.Base + (level - 1) * config.PerLevel
 end
@@ -103,7 +106,7 @@ function UpgradeService:GetAllUpgradeInfo(player)
 	local result = {}
 
 	for _upgradeType, _config in pairs(UpgradeConfig) do
-		local _level = data.Upgrades[_upgradeType]
+		local _level = data.Upgrades[_upgradeType] or 1 -- Default to level 1 if missing
 		local _cost = _config.Cost(_level)
 		local _value = _config.Base + (_level - 1) * _config.PerLevel
 

@@ -89,9 +89,17 @@ end)
 -- LAUNCH
 -- ======================
 
-local function playLaunch(result, power, distance)
+local function playLaunch(result, _power, distance, tireData)
+	-- Apply tire physics if provided
+	local arcHeightMultiplier = 1.0
+	local stabilityMultiplier = 1.0
+
+	if tireData then
+		arcHeightMultiplier = tireData.TireArcHeight or 0.2
+		stabilityMultiplier = tireData.TireStability or 1.0
+	end
+
 	local startPos = dummy.Position
-	-- local direction = Vector3.new(0, 0, -1)
 
 	local duration = math.clamp(distance / 100, 0.5, 1.5)
 	local elapsed = 0
@@ -102,12 +110,12 @@ local function playLaunch(result, power, distance)
 		local closest = nil
 		local minDist = math.huge
 
-		for _, target in ipairs(targetsFolder:GetChildren()) do
-			local dist = (dummy.Position - target.Position).Magnitude
+		for _, targetObj in ipairs(targetsFolder:GetChildren()) do
+			local dist = (dummy.Position - targetObj.Position).Magnitude
 
 			if dist < minDist then
 				minDist = dist
-				closest = target
+				closest = targetObj
 			end
 		end
 
@@ -124,8 +132,31 @@ local function playLaunch(result, power, distance)
 		direction = Vector3.new(0, 0, -1)
 	end
 
+	-- Create a perpendicular basis for lateral deviation
+	local perpendicular1 = (direction:Cross(Vector3.new(0, 1, 0))).Unit
+	local perpendicular2 = (direction:Cross(perpendicular1)).Unit
+
 	local distToTarget = (target.Position - startPos).Magnitude
-	local height = distToTarget * 0.2
+	local height = distToTarget * arcHeightMultiplier -- Use tire arc height
+
+	-- Calculate accuracy-based deviation magnitude
+	local deviationMagnitude = 0
+	if result == "Perfect" then
+		deviationMagnitude = 0 -- Perfect hit, no deviation
+	elseif result == "Good" then
+		-- Good hit: small random deviation (±2-3 studs)
+		deviationMagnitude = math.random(20, 30) / 10
+	else -- Miss
+		-- Miss: large random deviation (±5-8 studs)
+		deviationMagnitude = math.random(50, 80) / 10
+	end
+
+	-- Apply tire stability to deviation (stable tires deviate less unpredictably)
+	deviationMagnitude = deviationMagnitude / stabilityMultiplier
+
+	-- Random lateral offsets
+	local lateralOffset1 = (math.random(-100, 100) / 100) * perpendicular1 * deviationMagnitude
+	local lateralOffset2 = (math.random(-100, 100) / 100) * perpendicular2 * deviationMagnitude
 
 	-- anticipation
 	dummy.Position -= Vector3.new(0, 0, 2)
@@ -141,7 +172,7 @@ local function playLaunch(result, power, distance)
 
 		local t = math.clamp(elapsed / duration, 0, 1)
 
-		local horizontal = startPos + direction * (distance * t)
+		local horizontal = startPos + direction * (distance * t) + lateralOffset1 + lateralOffset2
 		local vertical = height * 4 * t * (1 - t)
 
 		local newPos = horizontal + Vector3.new(0, vertical, 0)
@@ -197,6 +228,6 @@ end
 -- SERVER RESPONSE
 -- ======================
 
-resultRemote.OnClientEvent:Connect(function(result, power, distance)
-	playLaunch(result, power, distance)
+resultRemote.OnClientEvent:Connect(function(result, power, distance, tireData)
+	playLaunch(result, power, distance, tireData)
 end)

@@ -16,12 +16,30 @@ local carryLabel = upgradeFrame:WaitForChild("CarryLabel")
 local remotes = ReplicatedStorage.Remotes
 local getInfoRemote = remotes:WaitForChild("GetUpgradeInfo")
 local upgradeRemote = remotes:WaitForChild("UpgradeRequest")
+local dataChangedEvent = remotes:WaitForChild("DataChanged")
 
--- Client-side data cache (listen to server updates)
+-- Client-side data cache
 local playerData = {
 	coins = 0,
 	tires = 0,
 }
+
+-- Update coins and tires labels
+local function updateResourceLabels()
+	coinsLabel.Text = "Coins: " .. playerData.coins
+	tiresLabel.Text = "Tires: " .. playerData.tires
+end
+
+-- Слушаем обновления от сервера
+dataChangedEvent.OnClientEvent:Connect(function(key, value)
+	if key == "Coins" then
+		playerData.coins = value
+		coinsLabel.Text = "Coins: " .. playerData.coins
+	elseif key == "Tires" then
+		playerData.tires = value
+		tiresLabel.Text = "Tires: " .. playerData.tires
+	end
+end)
 
 -- Update upgrade UI
 local function updateUpgradeUI()
@@ -67,13 +85,14 @@ end
 
 -- Initial setup
 local function setupUI()
+	updateResourceLabels()
 	updateUpgradeUI()
 end
 
 -- Upgrade button handlers
 upgradeFrame.PowerUp.MouseButton1Click:Connect(function()
 	upgradeRemote:FireServer("Power")
-	task.wait(0.1) -- Brief delay for server processing
+	task.wait(0.1)
 	updateUpgradeUI()
 end)
 
@@ -83,9 +102,7 @@ upgradeFrame.CarryUp.MouseButton1Click:Connect(function()
 	updateUpgradeUI()
 end)
 
--- Listen for data updates from client-side events
--- For MVP: we'll use a polling system since ProfileService is server-only
--- In production, you'd implement proper client-server data sync
+-- Polling for upgrade UI updates
 task.spawn(function()
 	while true do
 		task.wait(0.5)

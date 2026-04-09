@@ -15,4 +15,9 @@ for _, service in pairs(services) do
 	end
 end
 
+-- Initialize DataSyncService last (after all other services)
+if services.DataSyncService and services.DataSyncService.Init then
+	services.DataSyncService:Init(services)
+end
+
 print("✅ All services initialized")

@@ -6,8 +6,9 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 
-local ProfileService = require(ReplicatedStorage.ServerPackages.ProfileService)
+local ProfileService = require(ServerScriptService:WaitForChild("ServerPackages"):WaitForChild("ProfileService"))
 local PlayerDataSchema = require(ReplicatedStorage.Shared.Types.PlayerDataSchema)
 
 local DataService = {}
@@ -178,8 +179,69 @@ function DataService:GetCoins(player)
 end
 
 -- ======================
--- REBIRTH OPERATIONS
+-- TIRE OPERATIONS
 -- ======================
+
+function DataService:AddTire(player, tireData)
+	local profile = activeProfiles[player.UserId]
+	if not profile then
+		return false
+	end
+
+	if not tireData or not tireData.TierID or not tireData.Modifier then
+		warn("Invalid tire data:", tireData)
+		return false
+	end
+
+	local data = profile.Data.data
+	local inventory = data.Inventory.Tires
+
+	-- Check carry capacity
+	if #inventory >= data.Inventory.CarryCapacity then
+		warn(player.Name, "inventory full!")
+		return false
+	end
+
+	-- Add tire with metadata
+	table.insert(inventory, {
+		TierID = tireData.TierID,
+		Modifier = tireData.Modifier,
+		PickedUpAt = os.time(),
+	})
+
+	profile:Reconcile()
+	self:_NotifyChange(player, "TiresChanged")
+
+	return true
+end
+
+function DataService:GetTires(player)
+	local data = self:Get(player)
+	return data and data.Inventory.Tires or {}
+end
+
+function DataService:GetCarryCapacity(player)
+	local data = self:Get(player)
+	return data and data.Inventory.CarryCapacity or 5
+end
+
+function DataService:RemoveTire(player, tireIndex)
+	local profile = activeProfiles[player.UserId]
+	if not profile then
+		return false
+	end
+
+	local inventory = profile.Data.data.Inventory.Tires
+	if not inventory or tireIndex < 1 or tireIndex > #inventory then
+		return false
+	end
+
+	table.remove(inventory, tireIndex)
+	profile:Reconcile()
+	self:_NotifyChange(player, "TiresChanged")
+
+	return true
+end
 
 function DataService:Rebirth(player)
 	local profile = activeProfiles[player.UserId]
@@ -197,6 +259,8 @@ function DataService:Rebirth(player)
 	-- Reset progress but keep collections
 	data.Economy.Coins = 0
 	data.Inventory.Tires = {}
+	data.Upgrades.Power = 1 -- Reset power upgrade
+	data.Upgrades.Carry = 1 -- Reset carry upgrade
 	data.Engines.Levels = { engine_toy = 1 }
 	data.Engines.Fuel = { engine_toy = 0 }
 

@@ -1,5 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LaunchConfig = require(ReplicatedStorage.Shared.Config.LaunchConfig)
+local TireConfig = require(ReplicatedStorage.Shared.Config.TireConfig)
+local TireDefinitions = require(ReplicatedStorage.Shared.Config.TireDefinitions)
 
 local LaunchService = {}
 LaunchService.__index = LaunchService
@@ -43,7 +45,57 @@ function LaunchService:ValidateLaunch(player)
 	return true
 end
 
-function LaunchService:HandleLaunch(player, result, position)
+-- New method: Launch specific tire with rewards
+function LaunchService:HandleLaunchWithTire(player, tireData, baseReward)
+	-- Rate limiting
+	if not self:ValidateLaunch(player) then
+		warn("Launch spam detected:", player.Name)
+		return
+	end
+
+	-- Get tire stats
+	local tierData = TireConfig.ByID[tireData.TierID]
+	local modifierData = TireDefinitions.ModifiersByID[tireData.Modifier]
+
+	if not tierData or not modifierData then
+		warn("Invalid tire data in launch")
+		return
+	end
+
+	-- Calculate distance with tire multiplier
+	local power = self.UpgradeService:GetValue(player, "Power")
+	local baseDistance = power * 2
+	local tireSpeedMultiplier = tierData.SpeedMultiplier
+	local finalDistance = baseDistance * tireSpeedMultiplier
+
+	-- Calculate final reward with accuracy scaling
+	local accuracyMultiplier = 1.0 -- Will be computed based on actual launch
+
+	-- Hit detection (simple version - can be expanded)
+	local hitTarget = self.TargetService:GetHitTarget(Vector3.new(0, 0, -finalDistance))
+	if hitTarget then
+		accuracyMultiplier = 2.0 -- Bonus for hit
+	end
+
+	local reward = math.floor(baseReward * accuracyMultiplier)
+
+	-- Add coins to player
+	self.DataService:AddCoins(player, reward)
+
+	-- Send result to client with tire-specific data
+	self.ResultRemote:FireClient(player, "Perfect", power, finalDistance, {
+		TireTierID = tireData.TierID,
+		TireModifier = tireData.Modifier,
+		TireSpeedMultiplier = tireSpeedMultiplier,
+		TireArcHeight = tierData.ArcHeight,
+		TireStability = tierData.Stability,
+	})
+
+	print(player.Name, "launched:", tierData.Name, modifierData.Name, "| Reward:", reward)
+end
+
+-- Original method: Timing-based launch (from skill check)
+function LaunchService:HandleLaunch(player, _result, position)
 	-- Rate limiting & anti-cheat FIRST
 	if not self:ValidateLaunch(player) then
 		warn("Launch spam detected:", player.Name)
@@ -71,7 +123,7 @@ function LaunchService:HandleLaunch(player, result, position)
 
 	self.ResultRemote:FireClient(player, finalResult, power, distance)
 
-	print(player.Name .. " launch:", finalResult, "| Reward:", reward)
+	print(player.Name, "launch:", finalResult, "| Reward:", reward)
 end
 
 function LaunchService:Recalculate(position)

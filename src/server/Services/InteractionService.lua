@@ -1,10 +1,13 @@
 local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local InteractionService = {}
 InteractionService.__index = InteractionService
 
 function InteractionService:Init(services)
 	self.PlayerService = services.PlayerService
+	self.TireSpawnerService = services.TireSpawnerService
+	self.DataService = services.DataService
 
 	self:BindTires()
 end
@@ -16,7 +19,7 @@ function InteractionService:BindTires()
 		end
 	end
 
-	-- если будут новые появляться
+	-- Handle new tires spawning
 	Workspace.DescendantAdded:Connect(function(obj)
 		if obj.Name == "Tire" then
 			self:SetupTire(obj)
@@ -51,18 +54,48 @@ function InteractionService:HandlePickup(player, tire)
 	end
 
 	local distance = (root.Position - tire.Position).Magnitude
-	if distance > 12 then
+	if distance > 20 then
 		return
-	end -- анти-чит
+	end -- Anti-cheat
 
-	local success = self.PlayerService:AddTire(player)
+	-- Get tire data
+	local tireData = self:GetTireDataFromPart(tire)
+	if not tireData then
+		warn("❌ Could not extract tire data from part")
+		return
+	end
+
+	-- Add tire to inventory
+	local success = self.DataService:AddTire(player, tireData)
 	if not success then
 		return
 	end
 
-	print(player.Name .. " picked tire")
+	print(player.Name .. " picked up: " .. tireData.TierID .. " " .. tireData.Modifier)
 
 	tire:Destroy()
+end
+
+-- Helper: Extract tire data from physical tire part
+function InteractionService:GetTireDataFromPart(tirePart)
+	if not tirePart then
+		return nil
+	end
+
+	local dataValue = tirePart:FindFirstChild("TireData")
+	if not dataValue or dataValue.ClassName ~= "StringValue" then
+		return nil
+	end
+
+	local parts = string.split(dataValue.Value, "|")
+	if #parts ~= 2 then
+		return nil
+	end
+
+	return {
+		TierID = parts[1],
+		Modifier = parts[2],
+	}
 end
 
 return InteractionService

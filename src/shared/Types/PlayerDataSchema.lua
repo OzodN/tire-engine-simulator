@@ -18,7 +18,9 @@ PlayerDataSchema.v1 = {
 	},
 
 	Inventory = {
-		Tires = {}, -- { { tierId = "tire_car_gold", rarity = 4, quantity = 2 }, ... }
+		-- Each tire is stored with tier and modifier
+		-- { { TierID = "Car", Modifier = "Gold", PickedUpAt = 12345 }, ... }
+		Tires = {},
 		CarryCapacity = 5,
 	},
 
@@ -35,8 +37,8 @@ PlayerDataSchema.v1 = {
 	},
 
 	Upgrades = {
-		Carry = 1,
-		Luck = 1,
+		Power = 1, -- Launch power (will be replaced by engines in future)
+		Carry = 1, -- Inventory carry capacity
 	},
 
 	Cosmetics = {
@@ -93,6 +95,9 @@ function PlayerDataSchema.Migrate(oldProfile)
 			newProfile.data.Inventory.Tires = oldProfile.Inventory.Tires
 		end
 		if oldProfile.Upgrades then
+			if oldProfile.Upgrades.Power then
+				newProfile.data.Upgrades.Power = oldProfile.Upgrades.Power
+			end
 			if oldProfile.Upgrades.Carry then
 				newProfile.data.Upgrades.Carry = oldProfile.Upgrades.Carry
 			end
