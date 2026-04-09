@@ -1,13 +1,20 @@
-local ServerScriptService = game:GetService("ServerScriptService")
-local DataService = require(ServerScriptService.Services.DataService)
-
 local LabelUpdateUtil = {}
 
+local _dataService
+
+function LabelUpdateUtil:Init(dataService)
+	_dataService = dataService
+end
+
 function LabelUpdateUtil:GetPlayer(player)
-	local playerData = DataService:Get(player)
+	if not _dataService then
+		error("LabelUpdateUtil not initialized with DataService")
+	end
+	local playerData = _dataService:Get(player)
 	if not playerData then
 		return
 	end
+
 	return playerData
 end
 
