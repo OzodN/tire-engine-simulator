@@ -116,6 +116,7 @@ end
 -- ======================
 
 function DataService:Get(player)
+	task.wait(1)
 	local profile = activeProfiles[player.UserId]
 	if not profile then
 		warn("Profile not found for player:", player.Name)

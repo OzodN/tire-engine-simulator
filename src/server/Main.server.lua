@@ -22,6 +22,13 @@ if not remotes:FindFirstChild("DataChanged") then
 	dataChanged.Parent = remotes
 end
 
+-- Create GetPlayerTires RemoteFunction
+if not remotes:FindFirstChild("GetPlayerTires") then
+	local getTires = Instance.new("RemoteFunction")
+	getTires.Name = "GetPlayerTires"
+	getTires.Parent = remotes
+end
+
 -- Initialize DataService first (handles persistence)
 services.DataService:Init()
 

@@ -21,8 +21,9 @@ function LaunchPadService:Init(services)
 	self.DataService = services.DataService
 	self.LaunchService = services.LaunchService
 
-	-- Create RemoteEvent for tire selection
 	local remotes = ReplicatedStorage.Remotes
+	
+	-- Create RemoteEvent for tire selection
 	if not remotes:FindFirstChild("SelectTireToLaunch") then
 		local selectRemote = Instance.new("RemoteEvent")
 		selectRemote.Name = "SelectTireToLaunch"
@@ -36,7 +37,20 @@ function LaunchPadService:Init(services)
 		self:LaunchTireFromInventory(player, tireIndex)
 	end)
 
+	-- Handle GetPlayerTires RemoteFunction
+	local getTiresRemote = remotes:WaitForChild("GetPlayerTires")
+	getTiresRemote.OnServerInvoke = function(player)
+		return self.DataService:GetTires(player)
+	end
+
 	self:BindLaunchPads()
+	
+	-- Create ShowInventory RemoteEvent
+	if not remotes:FindFirstChild("ShowInventory") then
+		local showInvRemote = Instance.new("RemoteEvent")
+		showInvRemote.Name = "ShowInventory"
+		showInvRemote.Parent = remotes
+	end
 end
 
 function LaunchPadService:BindLaunchPads()
@@ -75,9 +89,11 @@ function LaunchPadService:SetupLaunchPad(pad)
 	end
 
 	proximity.Triggered:Connect(function(player)
-		-- Fire client with inventory tires
-		local tires = self.DataService:GetTires(player)
-		self:SendInventoryToClient(player, tires)
+		-- Show inventory UI on client
+		local showInvRemote = ReplicatedStorage.Remotes:FindFirstChild("ShowInventory")
+		if showInvRemote then
+			showInvRemote:FireClient(player)
+		end
 	end)
 end
 
