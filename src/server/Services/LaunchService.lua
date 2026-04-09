@@ -2,6 +2,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LaunchConfig = require(ReplicatedStorage.Shared.Config.LaunchConfig)
 local TireConfig = require(ReplicatedStorage.Shared.Config.TireConfig)
 local TireDefinitions = require(ReplicatedStorage.Shared.Config.TireDefinitions)
+local EngineConfig = require(ReplicatedStorage.Shared.Config.EngineConfig)
+local LaunchCalculator = require(ReplicatedStorage.Shared.Modules.LaunchCalculator)
+local TargetSelector = require(ReplicatedStorage.Shared.Modules.TargetSelector)
 
 local LaunchService = {}
 LaunchService.__index = LaunchService
@@ -62,36 +65,46 @@ function LaunchService:HandleLaunchWithTire(player, tireData, baseReward)
 		return
 	end
 
-	-- Calculate distance with tire multiplier
-	local power = self.UpgradeService:GetValue(player, "Power")
-	local baseDistance = power * 2
-	local tireSpeedMultiplier = tierData.SpeedMultiplier
-	local finalDistance = baseDistance * tireSpeedMultiplier
+	-- Get player stats
+	local playerData = self.DataService:GetPlayerData(player)
+	local engineLevel = 1 -- TODO: Get from player data when engine selection added
+	local powerLevel = self.UpgradeService:GetValue(player, "Power")
+	local accuracyResult = "Perfect" -- TODO: Get from skill check when timing system added
 
-	-- Calculate final reward with accuracy scaling
-	local accuracyMultiplier = 1.0 -- Will be computed based on actual launch
+	-- Calculate launch distance using LaunchCalculator
+	local launchDistance = LaunchCalculator:CalculateDistance({
+		engineLevel = engineLevel,
+		tireSpeedMultiplier = tierData.SpeedMultiplier,
+		tireModifier = tireData.Modifier,
+		powerLevel = powerLevel,
+		accuracyResult = accuracyResult,
+		boostMultiplier = 1.0,
+	})
 
-	-- Hit detection (simple version - can be expanded)
-	local hitTarget = self.TargetService:GetHitTarget(Vector3.new(0, 0, -finalDistance))
-	if hitTarget then
-		accuracyMultiplier = 2.0 -- Bonus for hit
+	-- Select best target based on distance
+	local lastTargetID = playerData.LastSelectedTargetID
+	local selectedTarget = TargetSelector:SelectTarget(launchDistance, lastTargetID)
+
+	-- Remember this target for next launch
+	if selectedTarget then
+		self.DataService:UpdatePlayerData(player, { LastSelectedTargetID = selectedTarget.ID })
 	end
 
-	local reward = math.floor(baseReward * accuracyMultiplier)
-
-	-- Add coins to player
+	-- Calculate reward
+	local reward = selectedTarget and selectedTarget.Reward or math.floor(baseReward * 0.5)
 	self.DataService:AddCoins(player, reward)
 
 	-- Send result to client with tire-specific data
-	self.ResultRemote:FireClient(player, "Perfect", power, finalDistance, {
+	self.ResultRemote:FireClient(player, "Perfect", powerLevel, launchDistance, {
 		TireTierID = tireData.TierID,
 		TireModifier = tireData.Modifier,
-		TireSpeedMultiplier = tireSpeedMultiplier,
+		TireSpeedMultiplier = tierData.SpeedMultiplier,
 		TireArcHeight = tierData.ArcHeight,
 		TireStability = tierData.Stability,
+		TargetID = selectedTarget and selectedTarget.ID or nil,
 	})
 
-	print(player.Name, "launched:", tierData.Name, modifierData.Name, "| Reward:", reward)
+	print(player.Name, "launched:", tierData.Name, modifierData.Name, "| Distance:", launchDistance, "| Reward:", reward)
 end
 
 -- Original method: Timing-based launch (from skill check)

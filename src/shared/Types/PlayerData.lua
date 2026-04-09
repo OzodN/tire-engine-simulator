@@ -8,4 +8,5 @@ return {
 		Power = 1,
 		Carry = 1,
 	},
+	LastSelectedTargetID = 1,  -- Remember last target player aimed at
 }
