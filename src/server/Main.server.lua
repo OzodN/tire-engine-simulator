@@ -56,6 +56,20 @@ if not remotes:FindFirstChild("GetPlayerTires") then
 	getTires.Parent = remotes
 end
 
+-- Create SelectEngine RemoteEvent
+if not remotes:FindFirstChild("SelectEngine") then
+	local selectEngine = Instance.new("RemoteEvent")
+	selectEngine.Name = "SelectEngine"
+	selectEngine.Parent = remotes
+end
+
+-- Create ShowEngineSelector RemoteEvent
+if not remotes:FindFirstChild("ShowEngineSelector") then
+	local showEngineSelector = Instance.new("RemoteEvent")
+	showEngineSelector.Name = "ShowEngineSelector"
+	showEngineSelector.Parent = remotes
+end
+
 -- Initialize DataService first (handles persistence)
 services.DataService:Init()
 

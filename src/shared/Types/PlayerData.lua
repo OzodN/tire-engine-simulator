@@ -9,4 +9,5 @@ return {
 		Carry = 1,
 	},
 	LastSelectedTargetID = 1,  -- Remember last target player aimed at
+	SelectedEngineID = "Starter",  -- Selected engine for launches
 }

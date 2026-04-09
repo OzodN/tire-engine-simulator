@@ -89,6 +89,12 @@ function LaunchPadService:SetupLaunchPad(pad)
 	end
 
 	proximity.Triggered:Connect(function(player)
+		-- Show engine selector UI on client
+		local showEngineRemote = ReplicatedStorage.Remotes:FindFirstChild("ShowEngineSelector")
+		if showEngineRemote then
+			showEngineRemote:FireClient(player)
+		end
+
 		-- Show inventory UI on client
 		local showInvRemote = ReplicatedStorage.Remotes:FindFirstChild("ShowInventory")
 		if showInvRemote then

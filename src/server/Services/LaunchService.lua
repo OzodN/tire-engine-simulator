@@ -28,6 +28,7 @@ function LaunchService:Init(services)
 	self.DataService = services.DataService
 	self.UpgradeService = services.UpgradeService
 	self.TargetService = services.TargetService
+	self.EngineService = services.EngineService
 	self.LaunchRemote = remotes.LaunchRequest
 	self.ResultRemote = remotes.LaunchResult
 
@@ -70,11 +71,11 @@ function LaunchService:HandleLaunchWithTire(player, tireData, baseReward)
 	local powerLevel = self.UpgradeService:GetValue(player, "Power")
 	local accuracyResult = "Perfect" -- TODO: Get from skill check when timing system added
 
-	-- Create engine data (temporary: use Starter engine level 1)
-	-- TODO: Replace with actual player's selected engine when EngineSelector UI created
+	-- Get player's selected engine
+	local selectedEngineID = self.EngineService:GetSelectedEngine(player)
 	local engineData = {
-		EngineID = "Starter",  -- Must match EngineConfig key
-		Level = 1,
+		EngineID = selectedEngineID,
+		Level = 1,  -- TODO: Add engine level progression
 	}
 
 	-- Calculate launch distance using LaunchCalculator
