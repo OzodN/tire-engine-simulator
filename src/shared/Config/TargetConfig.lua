@@ -1,51 +1,15 @@
 --[[
-	TargetConfig - Defines all target positions in the game
-	Targets are ordered by distance from LaunchPad
-	Each target has a fixed position that never changes
+	TargetConfig - Dynamically populated from Workspace/Targets
+	Targets are scanned at runtime and ordered by distance
+	InitTargets.server.lua populates this config on server start
 ]]
 
 local TargetConfig = {
-	-- Launch pad position (reference point)
-	LaunchPadPosition = Vector3.new(0, 5, 0),
+	-- Launch pad position (set by InitTargets)
+	LaunchPadPosition = nil,
 	
-	-- All targets ordered by distance
-	Targets = {
-		{
-			ID = 1,
-			Name = "🎯 Target 1",
-			Position = Vector3.new(0, 5, 20),
-			Distance = 20,  -- Distance from LaunchPad
-			Reward = 10,    -- Base reward for hitting this target
-		},
-		{
-			ID = 2,
-			Name = "🎯 Target 2",
-			Position = Vector3.new(0, 5, 50),
-			Distance = 50,
-			Reward = 25,
-		},
-		{
-			ID = 3,
-			Name = "🎯 Target 3",
-			Position = Vector3.new(0, 5, 100),
-			Distance = 100,
-			Reward = 50,
-		},
-		{
-			ID = 4,
-			Name = "🎯 Target 4",
-			Position = Vector3.new(0, 5, 150),
-			Distance = 150,
-			Reward = 100,
-		},
-		{
-			ID = 5,
-			Name = "🎯 Target 5",
-			Position = Vector3.new(0, 5, 200),
-			Distance = 200,
-			Reward = 150,
-		},
-	},
+	-- All targets ordered by distance (populated at runtime)
+	Targets = {},
 }
 
 -- Helper: Get target by ID
@@ -65,6 +29,46 @@ function TargetConfig:GetAllPositions()
 		table.insert(positions, target.Position)
 	end
 	return positions
+end
+
+-- Initialize targets from Workspace (called by InitTargets.server.lua)
+function TargetConfig:Initialize(launchPadPosition, targetObjects)
+	self.LaunchPadPosition = launchPadPosition
+	self.Targets = {}
+	
+	local targetData = {}
+	
+	-- Scan all target objects and calculate distances
+	for _, target in ipairs(targetObjects) do
+		if target:IsA("BasePart") then
+			local distance = (target.Position - launchPadPosition).Magnitude
+			table.insert(targetData, {
+				Object = target,
+				Position = target.Position,
+				Distance = distance,
+				Name = target.Name,
+			})
+		end
+	end
+	
+	-- Sort by distance
+	table.sort(targetData, function(a, b)
+		return a.Distance < b.Distance
+	end)
+	
+	-- Assign IDs and populate Targets
+	for id, data in ipairs(targetData) do
+		local reward = 10 + (id - 1) * 25  -- Escalating rewards
+		table.insert(self.Targets, {
+			ID = id,
+			Name = data.Name,
+			Position = data.Position,
+			Distance = math.round(data.Distance),
+			Reward = reward,
+		})
+	end
+	
+	print("✅ TargetConfig initialized with " .. #self.Targets .. " targets")
 end
 
 return TargetConfig

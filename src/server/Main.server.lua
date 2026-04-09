@@ -5,6 +5,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Loader = require(game.ReplicatedStorage.Shared.Modules.Loader)
 
+-- Initialize targets FIRST before services load
+require(script.Parent:FindFirstChild("InitTargets"))
+
 local services = Loader.LoadFolder(ServicesFolder)
 
 -- Create critical Remotes EARLY (before clients connect)
