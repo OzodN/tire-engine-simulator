@@ -7,27 +7,32 @@ local RunService = game:GetService("RunService")
 local dummy = Workspace:WaitForChild("LaunchDummy")
 
 --// SOUNDS
-local soundsFolder = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Sounds")
+local soundsFolder = ReplicatedStorage.Assets.Sounds
 
 local Sounds = {
-	Launch = soundsFolder:WaitForChild("Launch"),
-	Impact = soundsFolder:WaitForChild("Impact"),
-	Perfect = soundsFolder:WaitForChild("Perfect"),
+	launchTire = {
+		Launch = soundsFolder.LaunchTire.Launch,
+		Impact = soundsFolder.LaunchTire.Impact,
+		Perfect = soundsFolder.LaunchTire.Perfect,
+	},
+	sellTires = {
+		Sell = soundsFolder.Purchase.SellTires,
+	},
 }
 
 local FXController = {}
 
 -- 🔊 звук запуска
 function FXController:PlayLaunch()
-	Sounds.Launch:Play()
+	Sounds.launchTire.Launch:Play()
 end
 
 -- 💥 эффекты удара
 function FXController:PlayImpact(result)
-	Sounds.Impact:Play()
+	Sounds.launchTire.Impact:Play()
 
 	if result == "Perfect" then
-		Sounds.Perfect:Play()
+		Sounds.launchTire.Perfect:Play()
 	end
 
 	-- частицы

@@ -9,11 +9,16 @@ UpgradeService.__index = UpgradeService
 
 function UpgradeService:Init(services)
 	self.DataService = services.DataService
-	self.UpgradeRemote = remotes:WaitForChild("UpgradeRequest")
 
+	self.UpgradeRemote = remotes:WaitForChild("UpgradeRequest")
 	self.UpgradeRemote.OnServerEvent:Connect(function(player, upgradeType)
 		self:HandleUpgrade(player, upgradeType)
 	end)
+
+	self.GetInfoRemote = remotes:WaitForChild("GetUpgradeInfo")
+	self.GetInfoRemote.OnServerInvoke = function(player)
+		return self:GetAllUpgradeInfo(player)
+	end
 end
 
 function UpgradeService:HandleUpgrade(player, upgradeType)
@@ -60,6 +65,27 @@ function UpgradeService:GetValue(player, upgradeType)
 	local config = UpgradeConfig[upgradeType]
 
 	return config.Base + (level - 1) * config.PerLevel
+end
+
+function UpgradeService:GetAllUpgradeInfo(player)
+	local data = self.DataService:Get(player)
+
+	local result = {}
+
+	for _upgradeType, _config in pairs(UpgradeConfig) do
+		local _level = data.Upgrades[_upgradeType]
+		local _cost = _config.Cost(_level)
+		local _value = _config.Base + (_level - 1) * _config.PerLevel
+
+		result[_upgradeType] = {
+			level = _level,
+			cost = _cost,
+			value = _value,
+			nextValue = _config.Base + _level * _config.PerLevel,
+		}
+	end
+
+	return result
 end
 
 return UpgradeService
