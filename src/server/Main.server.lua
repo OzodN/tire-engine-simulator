@@ -2,16 +2,17 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local ServicesFolder = ServerScriptService.Services
 
 local Loader = require(game.ReplicatedStorage.Shared.Modules.Loader)
-local LabelUpdateUtil = require(game.ReplicatedStorage.Shared.Utils.LabelUpdateUtil)
 
 local services = Loader.LoadFolder(ServicesFolder)
 
--- init order
+-- Initialize DataService first (handles persistence)
 services.DataService:Init()
-LabelUpdateUtil:Init(services.DataService)
 
+-- Initialize all other services
 for _, service in pairs(services) do
-	if service.Init then
+	if service.Init and service ~= services.DataService then
 		service:Init(services)
 	end
 end
+
+print("✅ All services initialized")

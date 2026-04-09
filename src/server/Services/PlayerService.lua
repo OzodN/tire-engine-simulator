@@ -1,6 +1,3 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local LabelUpdateUtil = require(ReplicatedStorage.Shared.Utils.LabelUpdateUtil)
-
 local PlayerService = {}
 PlayerService.__index = PlayerService
 
@@ -9,31 +6,46 @@ function PlayerService:Init(services)
 	self.UpgradeService = services.UpgradeService
 end
 
+-- Add tire to player inventory (respects carry capacity)
 function PlayerService:AddTire(player)
 	local data = self.DataService:Get(player)
-	local carry = self.UpgradeService:GetValue(player, "Carry")
-
-	if data.Inventory.Tires >= carry then
+	if not data then
 		return false
 	end
 
-	data.Inventory.Tires += 1
+	local carry = self.UpgradeService:GetValue(player, "Carry")
 
-	-- обновляем TiresLabel
-	LabelUpdateUtil:SyncTires(player)
+	if #data.Inventory.Tires >= carry then
+		return false -- Inventory full
+	end
+
+	-- For MVP: simple tire (just count, no tier/rarity yet)
+	table.insert(data.Inventory.Tires, { tierId = "tire_basic", rarity = 1 })
+
+	-- Trigger save
+	local profile = self.DataService:GetRaw(player)
+	if profile then
+		profile:Reconcile()
+	end
 
 	return true
 end
 
+-- Drop tires from inventory (sell)
 function PlayerService:DropTires(player)
 	local data = self.DataService:Get(player)
+	if not data then
+		return 0
+	end
 
-	local amount = data.Inventory.Tires
+	local amount = #data.Inventory.Tires
+	data.Inventory.Tires = {}
 
-	data.Inventory.Tires = 0
-
-	-- обновляем TiresLabel
-	LabelUpdateUtil:SyncTires(player)
+	-- Trigger save
+	local profile = self.DataService:GetRaw(player)
+	if profile then
+		profile:Reconcile()
+	end
 
 	return amount
 end

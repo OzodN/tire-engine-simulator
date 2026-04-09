@@ -1,87 +1,27 @@
+-- LabelUpdateUtil is deprecated
+-- All data synchronization is now handled by DataService with ProfileService
+-- This file is kept for backward compatibility only
+
 local LabelUpdateUtil = {}
 
-local _dataService
-
 function LabelUpdateUtil:Init(dataService)
-	_dataService = dataService
-end
-
-function LabelUpdateUtil:GetPlayer(player)
-	if not _dataService then
-		error("LabelUpdateUtil not initialized with DataService")
-	end
-	local playerData = _dataService:Get(player)
-	if not playerData then
-		return
-	end
-
-	return playerData
-end
-
-function LabelUpdateUtil:SyncTires(player)
-	local dataFolder = player:WaitForChild("Data")
-	if not dataFolder then
-		return
-	end
-
-	local tires = dataFolder:FindFirstChild("Tires")
-	if not tires then
-		return
-	end
-
-	tires.Value = LabelUpdateUtil:GetPlayer(player).Inventory.Tires
+	-- No-op
 end
 
 function LabelUpdateUtil:SyncCoins(player)
-	local dataFolder = player:WaitForChild("Data")
-	if not dataFolder then
-		return
-	end
+	-- No-op
+end
 
-	local coins = dataFolder:FindFirstChild("Coins")
-	if not coins then
-		return
-	end
-
-	coins.Value = LabelUpdateUtil:GetPlayer(player).Coins
+function LabelUpdateUtil:SyncTires(player)
+	-- No-op
 end
 
 function LabelUpdateUtil:SyncPower(player)
-	local dataFolder = player:WaitForChild("Data")
-	if not dataFolder then
-		return
-	end
-
-	local upgrades = dataFolder:FindFirstChild("Upgrades")
-	if not upgrades then
-		return
-	end
-
-	local power = upgrades:FindFirstChild("Power")
-	if not power then
-		return
-	end
-
-	power.Value = LabelUpdateUtil:GetPlayer(player).Upgrades.Power
+	-- No-op
 end
 
 function LabelUpdateUtil:SyncCarry(player)
-	local dataFolder = player:WaitForChild("Data")
-	if not dataFolder then
-		return
-	end
-
-	local upgrades = dataFolder:FindFirstChild("Upgrades")
-	if not upgrades then
-		return
-	end
-
-	local carry = upgrades:FindFirstChild("Carry")
-	if not carry then
-		return
-	end
-
-	carry.Value = LabelUpdateUtil:GetPlayer(player).Upgrades.Carry
+	-- No-op
 end
 
 return LabelUpdateUtil

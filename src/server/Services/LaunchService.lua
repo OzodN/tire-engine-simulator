@@ -1,22 +1,28 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LaunchConfig = require(ReplicatedStorage.Shared.Config.LaunchConfig)
-local LabelUpdateUtil = require(ReplicatedStorage.Shared.Utils.LabelUpdateUtil)
 
 local LaunchService = {}
 LaunchService.__index = LaunchService
 
--- зоны
+-- Timing zones
 local PERFECT_START = 0.45
 local PERFECT_END = 0.55
 
 local GOOD_START = 0.35
 local GOOD_END = 0.65
 
+-- Anti-spam: minimum time between launches (seconds)
+local LAUNCH_COOLDOWN = 1.0
+
+-- Rate limiting storage: { playerId: lastLaunchTime }
+local launchCooldowns = {}
+
 function LaunchService:Init(services)
 	local remotes = ReplicatedStorage.Remotes
 
 	self.DataService = services.DataService
 	self.UpgradeService = services.UpgradeService
+	self.TargetService = services.TargetService
 	self.LaunchRemote = remotes.LaunchRequest
 	self.ResultRemote = remotes.LaunchResult
 
@@ -25,29 +31,47 @@ function LaunchService:Init(services)
 	end)
 end
 
-function LaunchService:HandleLaunch(player, result, position)
-	local data = self.DataService:Get(player)
+function LaunchService:ValidateLaunch(player)
+	local now = tick()
+	local lastLaunch = launchCooldowns[player.UserId]
 
-	-- сервер пересчитывает
+	if lastLaunch and (now - lastLaunch) < LAUNCH_COOLDOWN then
+		return false -- On cooldown
+	end
+
+	launchCooldowns[player.UserId] = now
+	return true
+end
+
+function LaunchService:HandleLaunch(player, result, position)
+	-- Rate limiting & anti-cheat FIRST
+	if not self:ValidateLaunch(player) then
+		warn("Launch spam detected:", player.Name)
+		return
+	end
+
+	-- Server-side validation: recalculate result from client input
 	local finalResult = self:Recalculate(position)
 
 	local config = LaunchConfig.Results[finalResult]
 
-	local power = self.UpgradeService:GetValue(player, "Power") -- 🔥 сила запуска
-	local distance = power * 2 -- 🔥 дистанция (упрощённо)
-	local reward = math.floor(distance * config.multiplier) -- 🔥 награда
+	local power = self.UpgradeService:GetValue(player, "Power")
+	local distance = power * 2
+	local reward = math.floor(distance * config.multiplier)
 
-	data.Coins += reward
+	-- Hit detection
+	local hitTarget = self.TargetService:GetHitTarget(Vector3.new(0, 0, -distance))
+	if hitTarget then
+		reward *= 2
+		print("🎯 HIT TARGET! BONUS x2")
+	end
+
+	-- Add reward to player profile (automatic save via DataService)
+	self.DataService:AddCoins(player, reward)
 
 	self.ResultRemote:FireClient(player, finalResult, power, distance)
 
-	-- обновляем CoinsLabel
-	LabelUpdateUtil:SyncCoins(player)
-
-	print(player.Name .. " launch:", finalResult)
-	print("Power:", power)
-	print("Distance:", distance)
-	print("Reward:", reward)
+	print(player.Name .. " launch:", finalResult, "| Reward:", reward)
 end
 
 function LaunchService:Recalculate(position)

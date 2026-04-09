@@ -91,11 +91,41 @@ end)
 
 local function playLaunch(result, power, distance)
 	local startPos = dummy.Position
-	local direction = Vector3.new(0, 0, -1)
+	-- local direction = Vector3.new(0, 0, -1)
 
-	local duration = 1
+	local duration = math.clamp(distance / 100, 0.5, 1.5)
 	local elapsed = 0
-	local height = power * 0.3
+
+	local targetsFolder = Workspace:WaitForChild("Targets")
+
+	local function getClosestTarget()
+		local closest = nil
+		local minDist = math.huge
+
+		for _, target in ipairs(targetsFolder:GetChildren()) do
+			local dist = (dummy.Position - target.Position).Magnitude
+
+			if dist < minDist then
+				minDist = dist
+				closest = target
+			end
+		end
+
+		return closest
+	end
+
+	local target = getClosestTarget()
+
+	local direction
+
+	if target then
+		direction = (target.Position - dummy.Position).Unit
+	else
+		direction = Vector3.new(0, 0, -1)
+	end
+
+	local distToTarget = (target.Position - startPos).Magnitude
+	local height = distToTarget * 0.2
 
 	-- anticipation
 	dummy.Position -= Vector3.new(0, 0, 2)
@@ -119,6 +149,28 @@ local function playLaunch(result, power, distance)
 
 		CameraController:Follow(newPos)
 
+		-- 🔥 ПРОВЕРКА ПОПАДАНИЯ
+		for _, target in ipairs(targetsFolder:GetChildren()) do
+			local distanceToTarget = (dummy.Position - target.Position).Magnitude
+
+			if distanceToTarget < 5 then
+				print("🎯 HIT TARGET!")
+
+				connection:Disconnect()
+
+				FXController:PlayImpact("Perfect")
+
+				task.spawn(function()
+					local camera = CameraController:Get()
+					FXController:ShakeCamera(camera, 2, 0.4)
+				end)
+
+				CameraController:SetDefault()
+				return
+			end
+		end
+
+		-- обычное завершение полёта
 		if t >= 1 then
 			connection:Disconnect()
 

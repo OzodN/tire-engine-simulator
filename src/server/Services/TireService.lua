@@ -7,29 +7,37 @@ function TireService:Init(services)
 	self.DataService = services.DataService
 end
 
--- 🔥 ГЛАВНАЯ ТОЧКА РАСШИРЕНИЯ
-function TireService:ProcessTires(player, amount)
+-- Calculate reward from tire processing
+function TireService:CalculateReward(player, amount)
 	if amount <= 0 then
-		return
+		return 0
 	end
 
 	local data = self.DataService:Get(player)
-
-	local reward = amount * EconomyConfig.Tire.BaseReward
-
-	data.Coins += reward
-
-	--временно для синхронизации монет после запуска, потом вынести в утилиту и юзать везде
-	local dataFolder = player:FindFirstChild("Data")
-	if dataFolder then
-		local _coins = dataFolder:FindFirstChild("Coins")
-		if _coins then
-			_coins.Value = data.Coins
-		end
+	if not data then
+		return 0
 	end
+
+	local baseReward = amount * EconomyConfig.Tire.BaseReward
+	local rebirthMultiplier = data.Economy.RebirthMultiplier or 1.0
+
+	return math.floor(baseReward * rebirthMultiplier)
+end
+
+-- Process tires: sell them for coins
+function TireService:ProcessTires(player, amount)
+	if amount <= 0 then
+		return { coins = 0 }
+	end
+
+	local reward = self:CalculateReward(player, amount)
+
+	-- Add coins (auto-saves via DataService)
+	self.DataService:AddCoins(player, reward)
 
 	return {
 		coins = reward,
+		count = amount,
 	}
 end
 
