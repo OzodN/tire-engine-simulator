@@ -130,7 +130,7 @@ end
 function EngineConfig:GetAllEngines()
 	local engines = {}
 	for name, config in pairs(self) do
-		if config.ID then
+		if type(config) == "table" and config.ID then
 			table.insert(engines, config)
 		end
 	end
